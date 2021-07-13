@@ -24,6 +24,8 @@ def clean_data(df):
     # clean categories
     for column in categories:
         categories[column] = categories[column].str[-1]
+        if (column == 'related'):
+            categories[column].str.replace('2', '1')
         categories[column] = categories[column].astype(int)
     
     # drop original categories column   
