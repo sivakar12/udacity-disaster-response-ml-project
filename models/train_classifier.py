@@ -9,6 +9,7 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import stopwords
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -24,7 +25,7 @@ def load_data(database_filepath):
     Y_columns = all_columns[4:]
     X = df['message']
     Y = df[Y_columns]
-    Y.drop(columns=['child_alone'], inplace=True)
+    Y = Y.astype(bool)
     return X, Y, Y_columns
 
 stemmer = PorterStemmer()
@@ -41,12 +42,18 @@ def tokenize(text):
 
 
 def build_model():
-    model = Pipeline([
+    pipeline = Pipeline([
         ('count', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
-        ('cls', MultiOutputClassifier(LogisticRegression(), n_jobs=-1))
+        ('cls', RandomForestClassifier(n_estimators=20, max_depth=5, n_jobs=-1))
     ])
-    return model
+    parameters = {
+        'count__ngram_range': [(1,1), (1, 2)],
+        'cls__n_estimators': [5, 10],
+        'cls__max_depth': [3, 5]
+    }
+    cv = GridSearchCV(pipeline, parameters, verbose=True, cv=2, n_jobs=-1)
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
