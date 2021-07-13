@@ -42,11 +42,11 @@ def clean_data(df):
 def save_data(df, database_filename):
     """Save the Dataframe in a SQLite file"""
     engine = create_engine('sqlite:///' + database_filename)
-    df.to_sql('DisasterResponse', engine, index=False)
+    df.to_sql('DisasterResponse', engine, index=False, if_exists='replace')
 
 
 def main():
-    """Read system args and calls the ETL steps""""
+    """Read system args and calls the ETL steps"""
     if len(sys.argv) == 4:
 
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
