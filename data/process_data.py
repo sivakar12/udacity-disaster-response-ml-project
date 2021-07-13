@@ -3,6 +3,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    """Return a DataFrame that combines the data from messages
+    and catagories CSVs."""
     # load csvs
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
@@ -12,6 +14,7 @@ def load_data(messages_filepath, categories_filepath):
     return df
 
 def clean_data(df):
+    """Clean the categories, drop duplicates and return them in proper type"""
     # organize categories
     categories = df['categories'].str.split(';', expand=True)
     row = df.categories[0]
@@ -37,11 +40,13 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    """Save the Dataframe in a SQLite file"""
     engine = create_engine('sqlite:///' + database_filename)
     df.to_sql('DisasterResponse', engine, index=False)
 
 
 def main():
+    """Read system args and calls the ETL steps""""
     if len(sys.argv) == 4:
 
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]

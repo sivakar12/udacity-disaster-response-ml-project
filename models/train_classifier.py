@@ -19,6 +19,8 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 nltk.download(['punkt', 'wordnet', 'stopwords'], quiet=True)
 
 def load_data(database_filepath):
+    """Load data from SQLite file and returns X, Y as DataFrames 
+    and a list of column names"""
     engine = create_engine('sqlite:///' + database_filepath)
     df = pd.read_sql_table('DisasterResponse', engine)
     all_columns = df.columns
@@ -33,6 +35,8 @@ lemmatizer = WordNetLemmatizer()
 stopwords_list = stopwords.words('english')
 
 def tokenize(text):
+    """Return a list of tokens by splitting the string text, lowercasing the words,
+    dropping stop words and lemmatizing and stemming the tokens"""
     text = re.sub(r'^says: ', '', text)
     text = text.lower()
     text = re.sub(r'[^A-Za-z]', ' ', text)
@@ -42,6 +46,7 @@ def tokenize(text):
 
 
 def build_model():
+    """Return a CrossValidation model containing the Pipeline that does text preprocessing"""
     pipeline = Pipeline([
         ('count', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
@@ -57,6 +62,8 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """Print classification report containing precesision, recall and f1
+    scores for each outoput column"""
     Y_pred = model.predict(X_test)
     Y_pred = pd.DataFrame(Y_pred, columns=Y_test.columns)
     for category in Y_test.columns:
@@ -65,11 +72,13 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
+    """Save the model object as a pickle file"""
     with open(model_filepath, 'wb') as model_file:
         pickle.dump(model, model_file)
 
 
 def main():
+    """Read the command line arguments and execute model training steps"""
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
