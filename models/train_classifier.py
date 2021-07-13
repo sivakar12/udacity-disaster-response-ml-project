@@ -1,24 +1,65 @@
 import sys
+import re
+import pickle
+from sqlalchemy import create_engine
+import pandas as pd
+import nltk
+from nltk.stem import PorterStemmer
+from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.corpus import stopwords
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, make_scorer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
+nltk.download(['punkt', 'wordnet', 'stopwords'], quiet=True)
 
 def load_data(database_filepath):
-    pass
+    engine = create_engine('sqlite:///' + database_filepath)
+    df = pd.read_sql_table('DisasterResponse', engine)
+    all_columns = df.columns
+    Y_columns = all_columns[4:]
+    X = df['message']
+    Y = df[Y_columns]
+    Y.drop(columns=['child_alone'], inplace=True)
+    return X, Y, Y_columns
 
+stemmer = PorterStemmer()
+lemmatizer = WordNetLemmatizer()
+stopwords_list = stopwords.words('english')
 
 def tokenize(text):
-    pass
+    text = re.sub(r'^says: ', '', text)
+    text = text.lower()
+    text = re.sub(r'[^A-Za-z]', ' ', text)
+    tokens = nltk.tokenize.word_tokenize(text)
+    tokens = [lemmatizer.lemmatize(stemmer.stem(token)) for token in tokens if token not in stopwords_list]
+    return tokens
 
 
 def build_model():
-    pass
+    model = Pipeline([
+        ('count', CountVectorizer(tokenizer=tokenize)),
+        ('tfidf', TfidfTransformer()),
+        ('cls', MultiOutputClassifier(LogisticRegression(), n_jobs=-1))
+    ])
+    return model
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    Y_pred = model.predict(X_test)
+    Y_pred = pd.DataFrame(Y_pred, columns=Y_test.columns)
+    for category in Y_test.columns:
+        print('-----{}------'.format(category.upper()))
+        print(classification_report(Y_test[category], Y_pred[category]))
 
 
 def save_model(model, model_filepath):
-    pass
+    with open(model_filepath, 'wb') as model_file:
+        pickle.dump(model, model_file)
 
 
 def main():
